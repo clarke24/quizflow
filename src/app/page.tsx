@@ -16,7 +16,7 @@ export default function HomePage() {
         </h1>
 
         <p className="text-lg text-slate-500 mb-12 max-w-md mx-auto leading-relaxed">
-          Build polished quizzes, share a QR code, and let players join with a name and team.
+          Generate quizzes by category, share a QR code, and let players join with a name and team.
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -31,9 +31,9 @@ export default function HomePage() {
         <div className="mt-20 grid sm:grid-cols-3 gap-6 text-left">
           {[
             {
-              icon: "✏️",
-              title: "Build",
-              desc: "Craft questions with timers, points, and multiple choice answers.",
+              icon: "✨",
+              title: "Generate",
+              desc: "Pick a category — Movies, Sports, Science, and more — and get a ready-to-play quiz.",
             },
             {
               icon: "📱",
