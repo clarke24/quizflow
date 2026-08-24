@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuizFlow
 
-## Getting Started
+Interactive team quiz platform. Create quizzes, share a QR code, and let players join with a name and team.
 
-First, run the development server:
+## Features
+
+- Quiz builder with multiple choice and true/false questions
+- QR code + 6-character join code for players
+- Team creation and live leaderboard
+- Host dashboard to control the quiz flow
+- Mobile-friendly player experience
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy to Railway
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push this repo to GitHub
+2. Go to [railway.com/new](https://railway.com/new) → **Deploy from GitHub repo**
+3. Select this repo — Railway auto-detects Next.js
+4. Once deployed, open the generated URL on your phone
 
-## Learn More
+Or use the deploy script (requires `GITHUB_TOKEN` and optionally `RAILWAY_TOKEN`):
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh quizflow
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## How to use
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Host:** Visit `/create` → build quiz → launch session
+2. **Share:** Show QR code on the host screen
+3. **Players:** Scan QR → enter name → pick/create team
+4. **Play:** Host starts quiz, players answer live, teams compete
