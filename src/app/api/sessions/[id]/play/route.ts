@@ -8,6 +8,7 @@ import {
   startQuiz,
   submitAnswer,
 } from "@/lib/store";
+import type { AnswerPayload } from "@/lib/types";
 
 export async function GET(
   request: Request,
@@ -34,7 +35,7 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { action, playerId, optionId } = body;
+  const { action, playerId, optionId, payload: rawPayload } = body;
 
   if (action === "start") {
     const session = startQuiz(id);
@@ -45,10 +46,17 @@ export async function POST(
   }
 
   if (action === "answer") {
-    if (!playerId || !optionId) {
-      return NextResponse.json({ error: "Missing playerId or optionId" }, { status: 400 });
+    if (!playerId) {
+      return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
     }
-    const answer = submitAnswer(id, playerId, optionId);
+
+    // Support legacy optionId and new payload shape
+    const payload: AnswerPayload = rawPayload || (optionId ? { optionId } : null);
+    if (!payload) {
+      return NextResponse.json({ error: "Missing answer payload" }, { status: 400 });
+    }
+
+    const answer = submitAnswer(id, playerId, payload);
     if (!answer) {
       return NextResponse.json({ error: "Could not submit answer" }, { status: 400 });
     }

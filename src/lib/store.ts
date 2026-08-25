@@ -1,12 +1,18 @@
 import { nanoid } from "nanoid";
 import type {
   Answer,
+  AnswerPayload,
   Player,
   Quiz,
   QuizSession,
   Team,
 } from "./types";
 import { TEAM_COLORS } from "./types";
+import {
+  gradeAnswer,
+  publicQuestionFields,
+  revealQuestionFields,
+} from "./grading";
 
 const quizzes = new Map<string, Quiz>();
 const sessions = new Map<string, QuizSession>();
@@ -137,7 +143,7 @@ export function startQuiz(sessionId: string): QuizSession | null {
 export function submitAnswer(
   sessionId: string,
   playerId: string,
-  optionId: string
+  payload: AnswerPayload
 ): Answer | null {
   const session = sessions.get(sessionId);
   if (!session || session.phase !== "question") return null;
@@ -150,21 +156,23 @@ export function submitAnswer(
   );
   if (alreadyAnswered) return null;
 
-  const correct = optionId === question.correctOptionId;
+  const result = gradeAnswer(question, payload);
   const answer: Answer = {
     playerId,
     questionId: question.id,
-    optionId,
+    payload,
+    optionId: payload.optionId,
     answeredAt: Date.now(),
-    correct,
-    points: correct ? question.points : 0,
+    correct: result.correct,
+    points: result.points,
+    pendingReview: result.pendingReview,
   };
   session.answers.push(answer);
 
   const player = session.players.find((p) => p.id === playerId);
-  if (player && correct) {
+  if (player && result.points > 0) {
     const team = session.teams.find((t) => t.id === player.teamId);
-    if (team) team.score += question.points;
+    if (team) team.score += result.points;
   }
 
   return answer;
@@ -224,29 +232,28 @@ export function getPublicSession(session: QuizSession) {
     })),
     currentQuestion: currentQuestion
       ? {
-          id: currentQuestion.id,
-          type: currentQuestion.type,
-          text: currentQuestion.text,
-          options: currentQuestion.options.map((o) => ({
-            id: o.id,
-            text: o.text,
-          })),
-          timeLimit: currentQuestion.timeLimit,
-          points: currentQuestion.points,
+          ...publicQuestionFields(currentQuestion),
           number: session.currentQuestionIndex + 1,
         }
       : null,
     reveal:
       session.phase === "reveal" && currentQuestion
         ? {
-            correctOptionId: currentQuestion.correctOptionId,
-            optionStats: currentQuestion.options.map((o) => ({
-              id: o.id,
-              count: session.answers.filter(
-                (a) =>
-                  a.questionId === currentQuestion.id && a.optionId === o.id
-              ).length,
-            })),
+            ...revealQuestionFields(currentQuestion),
+            optionStats: currentQuestion.options
+              .filter((o) => o.side !== "right")
+              .map((o) => ({
+                id: o.id,
+                count: session.answers.filter((a) => {
+                  if (a.questionId !== currentQuestion.id) return false;
+                  if (a.payload.optionId === o.id) return true;
+                  if (a.payload.optionIds?.includes(o.id)) return true;
+                  return false;
+                }).length,
+              })),
+            responseCount: session.answers.filter(
+              (a) => a.questionId === currentQuestion.id
+            ).length,
           }
         : null,
   };
@@ -268,9 +275,11 @@ export function getPlayerSessionState(
     ...publicState,
     myAnswer: myAnswer
       ? {
+          payload: myAnswer.payload,
           optionId: myAnswer.optionId,
           correct: myAnswer.correct,
           points: myAnswer.points,
+          pendingReview: myAnswer.pendingReview,
         }
       : null,
   };
