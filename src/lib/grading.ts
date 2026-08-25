@@ -24,6 +24,31 @@ export interface GradeResult {
   correct: boolean | null;
   points: number;
   pendingReview?: boolean;
+  speedMultiplier?: number;
+}
+
+/**
+ * Kahoot-style speed scoring:
+ * Instant correct = full points
+ * At time limit = ~50% of points
+ * Wrong / pending = unchanged (0 or pending)
+ */
+export function applySpeedScoring(
+  base: GradeResult,
+  question: Question,
+  elapsedSec: number
+): GradeResult {
+  if (base.pendingReview || base.correct === null) return base;
+  if (!base.points || base.points <= 0) {
+    return { ...base, speedMultiplier: 0 };
+  }
+
+  const limit = Math.max(1, question.timeLimit);
+  const ratio = Math.min(1, Math.max(0, elapsedSec / limit));
+  // Multiplier ranges from 1.0 (instant) down to 0.5 (at/after time limit)
+  const speedMultiplier = Math.max(0.5, 1 - ratio * 0.5);
+  const points = Math.max(1, Math.round(base.points * speedMultiplier));
+  return { ...base, points, speedMultiplier };
 }
 
 export function gradeAnswer(

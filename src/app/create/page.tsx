@@ -167,7 +167,7 @@ export default function CreatePage() {
       const res = await fetch("/api/quizzes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, questions }),
+        body: JSON.stringify({ title, description, questions, save: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -180,7 +180,13 @@ export default function CreatePage() {
       const sessionData = await sessionRes.json();
       if (!sessionRes.ok) throw new Error(sessionData.error);
 
-      router.push(`/host/${sessionData.sessionId}`);
+      localStorage.setItem(
+        `quizflow-admin-${sessionData.sessionId}`,
+        sessionData.adminToken
+      );
+      router.push(
+        `/admin/${sessionData.sessionId}?token=${sessionData.adminToken}`
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {

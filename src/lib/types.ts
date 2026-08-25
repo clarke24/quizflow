@@ -1,18 +1,15 @@
 export type QuestionFamily = "selection" | "open-entry" | "arrangement";
 
 export type QuestionType =
-  // Selection
   | "multiple-choice"
   | "checkboxes"
   | "true-false"
   | "picture-choice"
   | "dropdown"
-  // Open Entry
   | "short-answer"
   | "long-answer"
   | "numeric"
   | "fill-blank"
-  // Arrangement
   | "matching"
   | "ordering"
   | "ranking";
@@ -20,9 +17,7 @@ export type QuestionType =
 export interface QuestionOption {
   id: string;
   text: string;
-  /** Optional image URL or emoji for picture-choice */
   imageUrl?: string;
-  /** For matching: which side this item belongs to */
   side?: "left" | "right";
 }
 
@@ -31,23 +26,16 @@ export interface Question {
   type: QuestionType;
   text: string;
   options: QuestionOption[];
-  /** Single-select correct answer (MC, TF, dropdown, picture) */
   correctOptionId?: string;
-  /** Multi-select correct answers (checkboxes) */
   correctOptionIds?: string[];
-  /** Short answer / fill-blank accepted answers */
   correctText?: string;
   correctTexts?: string[];
-  /** Numeric answer */
   correctNumber?: number;
   numberTolerance?: number;
-  /** Ordering / ranking: option ids in correct sequence */
   correctOrder?: string[];
-  /** Matching: leftOptionId -> rightOptionId */
   correctMatches?: Record<string, string>;
   timeLimit: number;
   points: number;
-  /** Long answers are not auto-graded */
   autoGrade?: boolean;
 }
 
@@ -66,9 +54,17 @@ export interface Quiz {
   description: string;
   questions: Question[];
   createdAt: number;
+  updatedAt?: number;
+  saved?: boolean;
 }
 
-export type SessionPhase = "lobby" | "question" | "reveal" | "finished";
+export type SessionPhase =
+  | "lobby"
+  | "question"
+  | "reveal"
+  | "leaderboard"
+  | "paused"
+  | "finished";
 
 export interface Team {
   id: string;
@@ -88,13 +84,35 @@ export interface Answer {
   playerId: string;
   questionId: string;
   payload: AnswerPayload;
-  /** Legacy convenience for single-select display */
   optionId?: string;
   answeredAt: number;
-  /** null = pending host review (long-answer) */
   correct: boolean | null;
   points: number;
   pendingReview?: boolean;
+  /** Seconds taken to answer (for speed scoring) */
+  elapsedSec?: number;
+  speedMultiplier?: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  teamColor?: string;
+  text?: string;
+  emoji?: string;
+  kind: "chat" | "emoji" | "system";
+  createdAt: number;
+}
+
+export interface RankSnapshot {
+  teamId: string;
+  name: string;
+  color: string;
+  score: number;
+  rank: number;
+  previousRank: number | null;
+  delta: number; // positive = moved up
 }
 
 export interface QuizSession {
@@ -103,11 +121,19 @@ export interface QuizSession {
   quizId: string;
   quiz: Quiz;
   phase: SessionPhase;
+  /** Phase before pause, so we can resume */
+  phaseBeforePause: SessionPhase | null;
   currentQuestionIndex: number;
   questionStartedAt: number | null;
+  /** Accumulated pause ms for current question */
+  pausedMs: number;
+  pauseStartedAt: number | null;
   teams: Team[];
   players: Player[];
   answers: Answer[];
+  chat: ChatMessage[];
+  rankHistory: RankSnapshot[];
+  adminToken: string;
   createdAt: number;
 }
 
@@ -122,4 +148,17 @@ export const TEAM_COLORS = [
   "#22c55e",
   "#f97316",
   "#3b82f6",
+];
+
+export const REACTION_EMOJIS = [
+  "🔥",
+  "😂",
+  "👏",
+  "😮",
+  "❤️",
+  "🎉",
+  "💀",
+  "🚀",
+  "👀",
+  "💯",
 ];

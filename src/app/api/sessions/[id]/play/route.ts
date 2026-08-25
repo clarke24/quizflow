@@ -4,9 +4,13 @@ import {
   getPublicSession,
   getSession,
   nextQuestion,
+  pauseSession,
   revealAnswer,
+  resumeSession,
+  showLeaderboard,
   startQuiz,
   submitAnswer,
+  verifyAdmin,
 } from "@/lib/store";
 import type { AnswerPayload } from "@/lib/types";
 
@@ -35,7 +39,19 @@ export async function POST(
 ) {
   const { id } = await params;
   const body = await request.json();
-  const { action, playerId, optionId, payload: rawPayload } = body;
+  const { action, playerId, optionId, payload: rawPayload, adminToken } = body;
+
+  const adminActions = [
+    "start",
+    "reveal",
+    "next",
+    "pause",
+    "resume",
+    "leaderboard",
+  ];
+  if (adminActions.includes(action) && !verifyAdmin(id, adminToken)) {
+    return NextResponse.json({ error: "Admin authorization required" }, { status: 403 });
+  }
 
   if (action === "start") {
     const session = startQuiz(id);
@@ -45,17 +61,38 @@ export async function POST(
     return NextResponse.json(getPublicSession(session));
   }
 
+  if (action === "pause") {
+    const session = pauseSession(id);
+    if (!session) {
+      return NextResponse.json({ error: "Could not pause" }, { status: 400 });
+    }
+    return NextResponse.json(getPublicSession(session));
+  }
+
+  if (action === "resume") {
+    const session = resumeSession(id);
+    if (!session) {
+      return NextResponse.json({ error: "Could not resume" }, { status: 400 });
+    }
+    return NextResponse.json(getPublicSession(session));
+  }
+
+  if (action === "leaderboard") {
+    const session = showLeaderboard(id);
+    if (!session) {
+      return NextResponse.json({ error: "Could not show leaderboard" }, { status: 400 });
+    }
+    return NextResponse.json(getPublicSession(session));
+  }
+
   if (action === "answer") {
     if (!playerId) {
       return NextResponse.json({ error: "Missing playerId" }, { status: 400 });
     }
-
-    // Support legacy optionId and new payload shape
     const payload: AnswerPayload = rawPayload || (optionId ? { optionId } : null);
     if (!payload) {
       return NextResponse.json({ error: "Missing answer payload" }, { status: 400 });
     }
-
     const answer = submitAnswer(id, playerId, payload);
     if (!answer) {
       return NextResponse.json({ error: "Could not submit answer" }, { status: 400 });
